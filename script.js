@@ -15,6 +15,7 @@ const defaultHeightInput = document.getElementById('defaultHeight');
 const removeBorderCheckbox = document.getElementById('removeBorder');
 const sandboxCheckbox = document.getElementById('sandbox');
 const sampleButton = document.getElementById('sampleButton');
+const hideOverflowCheckbox = document.getElementById('hideOverflow');
 
 /**
  * Cache
@@ -40,6 +41,10 @@ const generate = async () => {
 			height = height || config.defaultHeight;
 			let iframeCodeStr = '';
 			let iframeStyleStr = '';
+			if (config.hideOverflow) {
+				// To hide overflow, the style has to be injected *inside* the frame
+				html += `<style>html{overflow:hidden !important;}</style>`;
+			}
 			if (config.removeBorder) {
 				iframeStyleStr = 'border:none;';
 			}
@@ -96,7 +101,8 @@ const getConfig = () => {
 		iframeType: document.querySelector('input[name="iframeType"]:checked').value,
 		defaultHeight: parseInt(defaultHeightInput.value, 10),
 		removeBorder: !!removeBorderCheckbox.checked,
-		sandbox: !!sandboxCheckbox.checked
+		sandbox: !!sandboxCheckbox.checked,
+		hideOverflow: !!hideOverflowCheckbox.checked
 	};
 	return config;
 };
@@ -110,13 +116,7 @@ const mapConfigToInputs = (config) => {
 	document.querySelector(`input[name="iframeType"][value="${config.iframeType}"]`).checked = true;
 	removeBorderCheckbox.checked = config.removeBorder;
 	defaultHeightInput.value = config.defaultHeight;
-};
-
-const dataUriIframeInject = (t, e, a, n) => {
-	(n = 'function' == typeof n ? n : function () {}), (a = 'boolean' != typeof a || a);
-	var i = document.createElement('iframe'),
-		c = 'data:text/html;charset=utf-8,' + escape(t);
-	i.addEventListener('load', n), i.setAttribute('src', c), a ? (e.appendChild(i), (i.style.width = '100%'), (i.style.height = '100%')) : e.replaceWith(i);
+	hideOverflowCheckbox.checked = config.hideOverflow;
 };
 
 const getIframeStrWithUri = (dataUri, optStyle = '', optWidth, optHeight, optSandbox = false) => {
