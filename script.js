@@ -30,7 +30,7 @@ const updateCache = (cache) => {
 let cache = getCache();
 
 // Main Generate Func
-const generate = async () => {
+const generate = async (optEvent) => {
 	const config = getConfig();
 	console.log(config);
 	if (urlInputElem.value && urlInputElem.checkValidity()) {
@@ -56,6 +56,9 @@ const generate = async () => {
 			}
 			outputArea.value = iframeCodeStr;
 			previewArea.innerHTML = iframeCodeStr;
+			if (optEvent) {
+				copyOutputToClipboard(optEvent);
+			}
 		} catch (e) {
 			// @TODO
 			reset(false);
@@ -65,6 +68,48 @@ const generate = async () => {
 	} else {
 		alert('Please enter a valid URL 🙃');
 	}
+};
+
+/**
+ * Copy output code to clipboard
+ * @param {MouseEvent | Event} event
+ */
+const copyOutputToClipboard = async (event) => {
+	const success = copyToClipboard(outputArea, event);
+
+	if (success) {
+		M.toast({
+			html: 'Copied to clipboard!'
+		});
+	}
+};
+
+/**
+ * Copy text to clipboard, from textarea
+ *  - Note: event param is used as reminder that copy ops require short-lived event triggers
+ * @param {HTMLTextAreaElement} textArea
+ * @param {MouseEvent | Event} [event]
+ * @returns {Promise<boolean>} sucess
+ */
+const copyToClipboard = async (textArea, event) => {
+	let success = false;
+	const text = textArea.value;
+	textArea.select();
+
+	if (navigator.clipboard) {
+		try {
+			await navigator.clipboard.writeText(text);
+			success = true;
+		} catch (err) {
+			console.error('Failed to write to clipboard', err);
+		}
+	}
+
+	if (!success) {
+		success = document.execCommand('copy');
+	}
+
+	return success;
 };
 
 /**
@@ -80,7 +125,7 @@ const reset = (resetUrl) => {
 	}
 };
 
-const loadSample = () => {
+const loadSample = (optEvent) => {
 	/** @type {Config} */
 	const sampleConfig = {
 		urlInput: 'https://twitter.com/1joshuatz/status/1178001362690293760',
@@ -91,7 +136,7 @@ const loadSample = () => {
 		hideOverflow: true
 	};
 	mapConfigToInputs(sampleConfig);
-	generate();
+	generate(optEvent);
 };
 
 const getConfig = () => {
@@ -198,10 +243,10 @@ const simpleEscape = (input) => {
  * Setup Event Listeners
  */
 let generationInProgress = false;
-generateButton.addEventListener('click', () => {
+generateButton.addEventListener('click', (evt) => {
 	if (!generationInProgress) {
 		generationInProgress = true;
-		generate().then(() => {
+		generate(evt).then(() => {
 			generationInProgress = false;
 		});
 	}
@@ -213,12 +258,13 @@ inputForm.addEventListener('submit', (evt) => {
 	evt.preventDefault();
 	if (!generationInProgress) {
 		generationInProgress = true;
-		generate().then(() => {
+		generate(evt).then(() => {
 			generationInProgress = false;
 		});
 	}
 });
 sampleButton.addEventListener('click', loadSample);
+outputArea.addEventListener('click', copyOutputToClipboard);
 
 /**
  * Types
