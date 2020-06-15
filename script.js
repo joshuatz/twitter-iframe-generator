@@ -16,6 +16,8 @@ const removeBorderCheckbox = document.getElementById('removeBorder');
 const sandboxCheckbox = document.getElementById('sandbox');
 const sampleButton = document.getElementById('sampleButton');
 const hideOverflowCheckbox = document.getElementById('hideOverflow');
+const aboutSection = document.getElementById('aboutSection');
+const aboutButtons = document.querySelectorAll('.aboutButton');
 
 /**
  * Cache
@@ -165,14 +167,12 @@ const mapConfigToInputs = (config) => {
 };
 
 const getIframeStrWithUri = (dataUri, optStyle = '', optWidth, optHeight, optSandbox = false) => {
-	return `
-<iframe src="${dataUri}" style="${optStyle}" ${optWidth ? `width="${optWidth}" ` : ''}${optHeight ? `height="${optHeight}" ` : ''}${optSandbox ? `sandbox ` : ``}></iframe>
+	return `<iframe src="${dataUri}" style="${optStyle}" ${optWidth ? `width="${optWidth}" ` : ''}${optHeight ? `height="${optHeight}" ` : ''}${optSandbox ? `sandbox ` : ``}></iframe>
 `;
 };
 
 const getIframeStrWithSrcDoc = (rawHtml, optStyle = '', optWidth, optHeight, optSandbox = false) => {
-	return `
-<iframe srcdoc="${rawHtml}" style="${optStyle}" ${optWidth ? `width="${optWidth}" ` : ''}${optHeight ? `height="${optHeight}" ` : ''}${optSandbox ? `sandbox ` : ``}></iframe>
+	return `<iframe srcdoc="${rawHtml}" style="${optStyle}" ${optWidth ? `width="${optWidth}" ` : ''}${optHeight ? `height="${optHeight}" ` : ''}${optSandbox ? `sandbox ` : ``}></iframe>
 `;
 };
 
@@ -240,6 +240,21 @@ const simpleEscape = (input) => {
 };
 
 /**
+ *
+ * @param {Element} elem
+ * @param {boolean} setVisible
+ */
+const scaleInOut = (elem, setVisible) => {
+	if (setVisible) {
+		elem.classList.remove('scale-out');
+		elem.classList.remove('noHeight');
+	} else {
+		elem.classList.add('scale-out');
+		elem.classList.add('noHeight');
+	}
+};
+
+/**
  * Setup Event Listeners
  */
 let generationInProgress = false;
@@ -265,6 +280,19 @@ inputForm.addEventListener('submit', (evt) => {
 });
 sampleButton.addEventListener('click', loadSample);
 outputArea.addEventListener('click', copyOutputToClipboard);
+aboutButtons.forEach((button) => {
+	button.addEventListener('click', (evt) => {
+		if (aboutSection.classList.contains('scale-out')) {
+			scaleInOut(aboutSection, true);
+			scrollTo(scrollX, 0);
+		} else {
+			scaleInOut(aboutSection, false);
+		}
+	});
+});
+aboutSection.querySelector('.closeButton').addEventListener('click', (evt) => {
+	scaleInOut(aboutSection, false);
+});
 
 /**
  * Types

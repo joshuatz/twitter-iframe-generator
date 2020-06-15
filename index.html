@@ -27,9 +27,60 @@
 				border-left: var(--gridStyle);
 				min-height: 98vh !important;
 			}
+			.aboutButton {
+				width: 40px;
+				height: 40px;
+				background: black;
+				border-radius: 20px;
+				text-align: center;
+				line-height: 37px;
+				cursor: pointer;
+				font-size: 2rem;
+			}
+			.hidden {
+				display: none;
+			}
+			#aboutSection.scale-transition {
+				transition-property: transform, height, max-height !important;
+				transition-duration: 0.5s !important;
+				transition-timing-function: cubic-bezier(0.53, 0.01, 0.36, 1.63) !important;
+			}
+			.scale-out,
+			.scale-out * {
+				margin: 0px !important;
+				padding: 0px !important;
+				overflow: hidden;
+			}
+			.row.scale-out {
+				margin-top: -20px !important;
+			}
+			.closeButton {
+				position: absolute;
+				top: 4px;
+				right: 4px;
+			}
+			.noHeight {
+				height: 0px !important;
+			}
 		</style>
 	</head>
 	<body>
+		<div id="aboutSection" class="scale-out scale-transition row noHeight" style="height: 160px;">
+			<div class="col s10 offset-s1 card">
+				<div class="closeButton">❎</div>
+				<p>This is a tool for generating IFrame twitter embeds, as opposed to the normal HTML+JS snippet.</p>
+				<p>IFrames offer improved security and sandboxing controls, which is one of many reasons why you might want to use this tool.</p>
+				<p>
+					For more details, please visit <a href="https://joshuatz.com/projects/web-stuff/twitter-iframe-embed-generator/" rel="noopener" target="_blank">the project page</a>, or
+					<a href="https://github.com/joshuatz/twitter-iframe-generator" rel="noopener" target="_blank">the Github repo</a>.
+				</p>
+				<p class="center-align">
+					<span>My Twitter 🐦 - <a href="https://twitter.com/1joshuatz" rel="noopener" target="_blank">@1joshuatz</a></span>
+					<br />
+					<span>My Website 🔗 - <a href="https://joshuatz.com/" rel="noopener" target="_blank">joshuatz.com</a></span>
+				</p>
+			</div>
+		</div>
 		<div class="row">
 			<div class="col s12 m6">
 				<form id="inputForm" class="col s12 row">
@@ -74,8 +125,8 @@
 						</label>
 					</div>
 					<div class="formSection row center-align">
-						<button id="sampleButton" class="btn col s4 offset-s1" type="button">Sample 📤</button>
-						<button id="generateButton" class="btn col s4 offset-s2" type="submit">Generate ✨</button>
+						<button id="sampleButton" class="btn col s4 offset-s1" type="button" title="Load sample tweet.">Sample 📤</button>
+						<button id="generateButton" class="btn col s4 offset-s2" type="submit" title="Generate the output code.">Generate ✨</button>
 					</div>
 				</form>
 				<div id="outputArea" class="row">
@@ -87,6 +138,9 @@
 				<p class="center-align flow-text">Preview:</p>
 				<div id="previewArea" class="center-align"></div>
 			</div>
+		</div>
+		<div class="fixed-action-btn">
+			<div class="aboutButton z-depth-3">❔</div>
 		</div>
 		<script src="./script.js"></script>
 		<script>
