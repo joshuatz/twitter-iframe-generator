@@ -14,6 +14,7 @@ const inputForm = document.getElementById('inputForm');
 const defaultHeightInput = document.getElementById('defaultHeight');
 const removeBorderCheckbox = document.getElementById('removeBorder');
 const sandboxCheckbox = document.getElementById('sandbox');
+const sampleButton = document.getElementById('sampleButton');
 
 /**
  * Cache
@@ -74,15 +75,41 @@ const reset = (resetUrl) => {
 	}
 };
 
+const loadSample = () => {
+	/** @type {Config} */
+	const sampleConfig = {
+		urlInput: 'https://twitter.com/1joshuatz/status/1178001362690293760',
+		iframeType: 'dataUri',
+		defaultHeight: 620,
+		removeBorder: true,
+		sandbox: false,
+		hideOverflow: true
+	};
+	mapConfigToInputs(sampleConfig);
+	generate();
+};
+
 const getConfig = () => {
 	/** @type {Config} */
 	const config = {
+		urlInput: urlInputElem.value,
 		iframeType: document.querySelector('input[name="iframeType"]:checked').value,
 		defaultHeight: parseInt(defaultHeightInput.value, 10),
 		removeBorder: !!removeBorderCheckbox.checked,
 		sandbox: !!sandboxCheckbox.checked
 	};
 	return config;
+};
+
+/**
+ * Map config to UI inputs
+ * @param {Config} config
+ */
+const mapConfigToInputs = (config) => {
+	urlInputElem.value = config.urlInput;
+	document.querySelector(`input[name="iframeType"][value="${config.iframeType}"]`).checked = true;
+	removeBorderCheckbox.checked = config.removeBorder;
+	defaultHeightInput.value = config.defaultHeight;
 };
 
 const dataUriIframeInject = (t, e, a, n) => {
@@ -191,6 +218,7 @@ inputForm.addEventListener('submit', (evt) => {
 		});
 	}
 });
+sampleButton.addEventListener('click', loadSample);
 
 /**
  * Types
@@ -227,8 +255,10 @@ inputForm.addEventListener('submit', (evt) => {
 
 /**
  * @typedef Config
+ * @property {string} urlInput
  * @property {'srcDoc' | 'dataUri'} iframeType
  * @property {number} defaultHeight
  * @property {boolean} removeBorder
+ * @property {boolean} hideOverflow
  * @property {boolean} sandbox
  */
