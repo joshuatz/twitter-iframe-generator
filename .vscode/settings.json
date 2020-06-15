@@ -1,0 +1,14 @@
+{
+	"editor.autoIndent": "advanced",
+	"editor.insertSpaces": false,
+	"editor.tabSize": 4,
+	"editor.formatOnSave": true,
+	"prettier.tabWidth": 4,
+	"prettier.useTabs": true,
+	"[javascript]": {
+		"editor.defaultFormatter": "esbenp.prettier-vscode"
+	},
+	"[html]": {
+		"editor.defaultFormatter": "esbenp.prettier-vscode"
+	}
+}

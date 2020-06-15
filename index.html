@@ -1,32 +1,95 @@
 <!DOCTYPE html>
 <html>
-<head>
-	<meta charset='utf-8'>
-	<meta http-equiv='X-UA-Compatible' content='IE=edge'>
-	<title>Twitter Iframe Embed Generator</title>
-	<meta name='viewport' content='width=device-width, initial-scale=1'>
-	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css" integrity="sha256-OweaP/Ic6rsV+lysfyS4h+LM6sRwuO3euTYfr6M124g=" crossorigin="anonymous" />
-	<style>
-
-	</style>
-</head>
-<body>
-	<div class="row">
-		<div class="col s12 m6">
-			<label>
-				Tweet URL:
-				<input type="url" id="tweetUrlInput" placeholder="Tweet URL" />
-			</label>
-			<div id="outputArea">
-				<textarea id="outputTextArea" disabled>Output will appear here...</textarea>
+	<head>
+		<meta charset="utf-8" />
+		<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+		<title>Twitter Iframe Embed Generator</title>
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css" integrity="sha256-OweaP/Ic6rsV+lysfyS4h+LM6sRwuO3euTYfr6M124g=" crossorigin="anonymous" />
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js" integrity="sha256-U/cHDMTIHCeMcvehBv1xQ052bPSbJtbuiw4QA9cTKz0=" crossorigin="anonymous" async></script>
+		<style>
+			:root {
+				--gridColor: #e0e0e0;
+				--gridStyle: 1px solid var(--gridColor);
+			}
+			#outputArea {
+				padding: 0.5rem 0.75rem;
+				border-top: var(--gridStyle);
+				margin-top: 20px;
+			}
+			#outputTextArea {
+				width: 90%;
+				min-height: 250px;
+				margin-left: 5%;
+				margin-top: 10px;
+			}
+			.previewWrapper {
+				border-left: var(--gridStyle);
+				min-height: 98vh !important;
+			}
+		</style>
+	</head>
+	<body>
+		<div class="row">
+			<div class="col s12 m6">
+				<form id="inputForm" class="col s12 row">
+					<!-- Tweet URL -->
+					<label>
+						Tweet URL:
+						<input type="url" id="tweetUrlInput" placeholder="Tweet URL" />
+					</label>
+					<!-- IFrame Type Selector -->
+					<div class="radioWrapper formSection row">
+						<div class="col s4">IFrame Type</div>
+						<label class="col s4">
+							<input name="iframeType" type="radio" value="dataUri" checked />
+							<span>Data URI</span>
+						</label>
+						<label class="tooltipped col s4" data-position="bottom" data-tooltip="Warning: `srcdoc` is not supported on IE">
+							<input name="iframeType" type="radio" value="srcDoc" />
+							<span>Src Doc</span>
+						</label>
+					</div>
+					<!-- Default Height -->
+					<div class="formSection row">
+						<div class="col s4">Default Height:</div>
+						<label class="col s8">
+							<input type="number" step="5" value="400" id="defaultHeight" />
+							<span>Default Height</span>
+						</label>
+					</div>
+					<!-- Checkboxes -->
+					<div class="row">
+						<label class="col s12 m6">
+							<input type="checkbox" checked id="removeBorder" />
+							<span>Remove border?</span>
+						</label>
+						<label class="col s12 m6 tooltipped" data-position="bottom" data-tooltip="This applies the `sandbox` attribute to the iframe. Breaks most of the Twitter embed.">
+							<input type="checkbox" id="sandbox" />
+							<span>Sandbox</span>
+						</label>
+					</div>
+					<div class="formSection row center-align">
+						<button id="generateButton" class="btn">Generate ✨</button>
+					</div>
+				</form>
+				<div id="outputArea" class="row">
+					<p class="center-align flow-text">Output HTML:</p>
+					<textarea id="outputTextArea" disabled class="col s12">Output will appear here...</textarea>
+				</div>
 			</div>
-			<button id="generateButton">Generate ✨</button>
+			<div class="previewWrapper col s12 m6">
+				<p class="center-align flow-text">Preview:</p>
+				<div id="previewArea"></div>
+			</div>
 		</div>
-		<div class="previewWrapper col s12 m6">
-			<p class="center-align flow-text">Preview:</p>
-			<div id="previewArea"></div>
-		</div>
-	</div>
-	<script src='./script.js'></script>
-</body>
+		<script src="./script.js"></script>
+		<script>
+			window.addEventListener('load', () => {
+				if (window['M']) {
+					M.AutoInit();
+				}
+			});
+		</script>
+	</body>
 </html>
