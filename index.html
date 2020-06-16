@@ -62,6 +62,13 @@
 			.noHeight {
 				height: 0px !important;
 			}
+			#toast-container,
+			.toast-container {
+				top: unset;
+				left: 7%;
+				right: unset;
+				bottom: 10%;
+			}
 		</style>
 	</head>
 	<body>
@@ -111,15 +118,15 @@
 					</div>
 					<!-- Checkboxes -->
 					<div class="row">
-						<label class="col s12 m6">
+						<label class="col s12 m6" title="Should the iframe border be removed?">
 							<input type="checkbox" checked id="removeBorder" />
 							<span>Remove border?</span>
 						</label>
-						<label class="col s12 m6 tooltipped" data-position="bottom" data-tooltip="This applies the `sandbox` attribute to the iframe. Breaks most of the Twitter embed.">
+						<label class="col s12 m6" title="This applies the `sandbox` attribute to the iframe. Breaks most of the Twitter embed.">
 							<input type="checkbox" id="sandbox" />
 							<span>Sandbox</span>
 						</label>
-						<label class="col s12 m6">
+						<label class="col s12 m6" title="Hide iframe overflow. This will prevent scrollbars from appearing if tweet is larger than iframe.">
 							<input type="checkbox" id="hideOverflow" />
 							<span>Hide overflow</span>
 						</label>
