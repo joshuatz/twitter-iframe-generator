@@ -18,6 +18,7 @@ const sampleButton = document.getElementById('sampleButton');
 const hideOverflowCheckbox = document.getElementById('hideOverflow');
 const aboutSection = document.getElementById('aboutSection');
 const aboutButtons = document.querySelectorAll('.aboutButton');
+const blockQuoteModeCheckbox = document.getElementById('blockQuoteModeCheckbox');
 
 /**
  * Cache
@@ -39,22 +40,40 @@ const generate = async (optEvent) => {
 		const tweetUrl = urlInputElem.value;
 		try {
 			const embedInfo = await getOEmbed(tweetUrl);
+			console.log(embedInfo);
 			let { html, width, height } = embedInfo;
 			height = height || config.defaultHeight;
 			let iframeCodeStr = '';
-			let iframeStyleStr = '';
-			if (config.hideOverflow) {
+			const iframeProps = {
+				style: null,
+				width,
+				height,
+				'data-tweet-url': embedInfo.url,
+				sandbox: config.sandbox
+			};
+			if (!config.blockQuoteMode && config.hideOverflow) {
 				// To hide overflow, the style has to be injected *inside* the frame
 				html += `<style>html{overflow:hidden !important;}</style>`;
 			}
 			if (config.removeBorder) {
-				iframeStyleStr = 'border:none;';
+				iframeProps.style = 'border:none;';
 			}
-			if (config.iframeType === 'dataUri') {
+
+			if (config.blockQuoteMode) {
+				// Strip Twitter JS script tag
+				html = html.replace(/<script[^<]+<\/script>/gi, '');
+				iframeCodeStr = html;
+			} else if (config.iframeType === 'dataUri') {
 				const dataUri = `data:text/html;charset=utf-8,${escape(html)}`;
-				iframeCodeStr = getIframeStrWithUri(dataUri, iframeStyleStr, width, height, config.sandbox);
+				iframeCodeStr = getIframeStrWithProps({
+					...iframeProps,
+					src: dataUri
+				});
 			} else {
-				iframeCodeStr = getIframeStrWithSrcDoc(simpleEscape(html), iframeStyleStr, width, height, config.sandbox);
+				iframeCodeStr = getIframeStrWithProps({
+					...iframeProps,
+					srcdoc: simpleEscape(html)
+				});
 			}
 			outputArea.value = iframeCodeStr;
 			previewArea.innerHTML = iframeCodeStr;
@@ -62,7 +81,6 @@ const generate = async (optEvent) => {
 				copyOutputToClipboard(optEvent);
 			}
 		} catch (e) {
-			// @TODO
 			reset(false);
 			console.error(e);
 			alert('Something went wrong! Maybe an invalid Tweet URL? 😢');
@@ -145,6 +163,7 @@ const getConfig = () => {
 	/** @type {Config} */
 	const config = {
 		urlInput: urlInputElem.value,
+		blockQuoteMode: !!blockQuoteModeCheckbox.checked,
 		iframeType: document.querySelector('input[name="iframeType"]:checked').value,
 		defaultHeight: parseInt(defaultHeightInput.value, 10),
 		removeBorder: !!removeBorderCheckbox.checked,
@@ -166,14 +185,22 @@ const mapConfigToInputs = (config) => {
 	hideOverflowCheckbox.checked = config.hideOverflow;
 };
 
-const getIframeStrWithUri = (dataUri, optStyle = '', optWidth, optHeight, optSandbox = false) => {
-	return `<iframe src="${dataUri}" style="${optStyle}" ${optWidth ? `width="${optWidth}" ` : ''}${optHeight ? `height="${optHeight}" ` : ''}${optSandbox ? `sandbox ` : ``}></iframe>
-`;
-};
-
-const getIframeStrWithSrcDoc = (rawHtml, optStyle = '', optWidth, optHeight, optSandbox = false) => {
-	return `<iframe srcdoc="${rawHtml}" style="${optStyle}" ${optWidth ? `width="${optWidth}" ` : ''}${optHeight ? `height="${optHeight}" ` : ''}${optSandbox ? `sandbox ` : ``}></iframe>
-`;
+/**
+ * Construct an IFrame string with arbitrary props and content
+ * @param {Record<string, any>} props
+ * @param {string} [fallbackContent] - Fallback content for if IFrames are disabled / unsupported
+ * @param {boolean} [includeFalse] - Include value === false pairs
+ */
+const getIframeStrWithProps = (props, fallbackContent = '', includeFalse = false) => {
+	let propStr = '';
+	for (const key in props) {
+		const propVal = props[key];
+		if (!!propVal || (propVal === false && includeFalse)) {
+			propStr += propStr.length ? ' ' : '';
+			propStr += `${key}="${propVal.toString()}"`;
+		}
+	}
+	return `<iframe ${propStr}>${fallbackContent}</iframe>`;
 };
 
 /**
@@ -293,6 +320,20 @@ aboutButtons.forEach((button) => {
 aboutSection.querySelector('.closeButton').addEventListener('click', (evt) => {
 	scaleInOut(aboutSection, false);
 });
+blockQuoteModeCheckbox.addEventListener('change', () => {
+	if (blockQuoteModeCheckbox.checked) {
+		document.querySelectorAll('.iframeOnly').forEach((elem) => {
+			elem.setAttribute('disabled', '');
+			elem.querySelectorAll('input').forEach((elem) => elem.setAttribute('disabled', ''));
+		});
+	} else {
+		document.querySelectorAll('.iframeOnly').forEach((elem) => {
+			elem.removeAttribute('disabled');
+			elem.querySelectorAll('input').forEach((elem) => elem.removeAttribute('disabled'));
+		});
+	}
+	reset(false);
+});
 
 /**
  * Types
@@ -330,6 +371,7 @@ aboutSection.querySelector('.closeButton').addEventListener('click', (evt) => {
 /**
  * @typedef Config
  * @property {string} urlInput
+ * @property {boolean} blockQuoteMode
  * @property {'srcDoc' | 'dataUri'} iframeType
  * @property {number} defaultHeight
  * @property {boolean} removeBorder

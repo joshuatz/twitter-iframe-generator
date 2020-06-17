@@ -69,6 +69,10 @@
 				right: unset;
 				bottom: 10%;
 			}
+			[disabled],
+			[disabled] * {
+				cursor: not-allowed !important;
+			}
 		</style>
 	</head>
 	<body>
@@ -97,19 +101,19 @@
 						<input type="url" id="tweetUrlInput" placeholder="Tweet URL" />
 					</label>
 					<!-- IFrame Type Selector -->
-					<div class="radioWrapper formSection row">
+					<div class="radioWrapper formSection row iframeOnly">
 						<div class="col s4">IFrame Type</div>
 						<label class="col s4">
 							<input name="iframeType" type="radio" value="dataUri" checked />
 							<span>Data URI</span>
 						</label>
-						<label class="tooltipped col s4" data-position="bottom" data-tooltip="Warning: `srcdoc` is not supported on IE">
+						<label class="tooltipped col s4" data-position="bottom" data-tooltip="Warning: `srcdoc` is not supported on all browsers.">
 							<input name="iframeType" type="radio" value="srcDoc" />
 							<span>Src Doc</span>
 						</label>
 					</div>
 					<!-- Default Height -->
-					<div class="formSection row">
+					<div class="formSection row iframeOnly">
 						<div class="col s4">Default Height:</div>
 						<label class="col s8">
 							<input type="number" step="5" value="400" id="defaultHeight" />
@@ -118,18 +122,28 @@
 					</div>
 					<!-- Checkboxes -->
 					<div class="row">
-						<label class="col s12 m6" title="Should the iframe border be removed?">
+						<label class="col s12 m6 iframeOnly" title="Should the iframe border be removed?">
 							<input type="checkbox" checked id="removeBorder" />
 							<span>Remove border?</span>
 						</label>
-						<label class="col s12 m6" title="This applies the `sandbox` attribute to the iframe. Breaks most of the Twitter embed.">
+						<label class="col s12 m6 iframeOnly" title="This applies the `sandbox` attribute to the iframe. Breaks most of the Twitter embed.">
 							<input type="checkbox" id="sandbox" />
 							<span>Sandbox</span>
 						</label>
-						<label class="col s12 m6" title="Hide iframe overflow. This will prevent scrollbars from appearing if tweet is larger than iframe.">
+						<label class="col s12 m6 iframeOnly" title="Hide iframe overflow. This will prevent scrollbars from appearing if tweet is larger than iframe.">
 							<input type="checkbox" id="hideOverflow" />
 							<span>Hide overflow</span>
 						</label>
+					</div>
+					<div class="formSection row center-align">
+						<div class="switch">
+							<label>
+								IFrame
+								<input id="blockQuoteModeCheckbox" type="checkbox" />
+								<span class="lever"></span>
+								BlockQuote Only
+							</label>
+						</div>
 					</div>
 					<div class="formSection row center-align">
 						<button id="sampleButton" class="btn col s4 offset-s1" type="button" title="Load sample tweet.">Sample 📤</button>
