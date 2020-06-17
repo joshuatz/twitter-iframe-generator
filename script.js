@@ -149,6 +149,7 @@ const loadSample = (optEvent) => {
 	/** @type {Config} */
 	const sampleConfig = {
 		urlInput: 'https://twitter.com/1joshuatz/status/1178001362690293760',
+		blockQuoteMode: false,
 		iframeType: 'dataUri',
 		defaultHeight: 620,
 		removeBorder: true,
@@ -179,6 +180,8 @@ const getConfig = () => {
  */
 const mapConfigToInputs = (config) => {
 	urlInputElem.value = config.urlInput;
+	blockQuoteModeCheckbox.checked = config.blockQuoteMode;
+	blockQuoteModeCheckbox.dispatchEvent(new Event('change'));
 	document.querySelector(`input[name="iframeType"][value="${config.iframeType}"]`).checked = true;
 	removeBorderCheckbox.checked = config.removeBorder;
 	defaultHeightInput.value = config.defaultHeight;
