@@ -1,24 +1,23 @@
+// @ts-check
 const CACHE_KEY = 'cache';
 
 /**
  * Elements
  */
-/** @type {HTMLTextAreaElement} */
-const outputArea = document.getElementById('outputTextArea');
-/** @type {HTMLInputElement} */
-const urlInputElem = document.getElementById('tweetUrlInput');
+const outputArea = /** @type {HTMLTextAreaElement} */ (document.getElementById('outputTextArea'));
+const urlInputElem = /** @type {HTMLInputElement} */ (document.getElementById('tweetUrlInput'));
 const generateButton = document.getElementById('generateButton');
 const placeholderOutTxt = outputArea.value;
 const previewArea = document.getElementById('previewArea');
-const inputForm = document.getElementById('inputForm');
-const defaultHeightInput = document.getElementById('defaultHeight');
-const removeBorderCheckbox = document.getElementById('removeBorder');
-const sandboxCheckbox = document.getElementById('sandbox');
+const inputForm = /** @type {HTMLFormElement} */ (document.getElementById('inputForm'));
+const defaultHeightInput = /** @type {HTMLInputElement} */ (document.getElementById('defaultHeight'));
+const removeBorderCheckbox = /** @type {HTMLInputElement} */ (document.getElementById('removeBorder'));
+const sandboxCheckbox = /** @type {HTMLInputElement} */ (document.getElementById('sandbox'));
 const sampleButton = document.getElementById('sampleButton');
-const hideOverflowCheckbox = document.getElementById('hideOverflow');
+const hideOverflowCheckbox = /** @type {HTMLInputElement} */ (document.getElementById('hideOverflow'));
 const aboutSection = document.getElementById('aboutSection');
 const aboutButtons = document.querySelectorAll('.aboutButton');
-const blockQuoteModeCheckbox = document.getElementById('blockQuoteModeCheckbox');
+const blockQuoteModeCheckbox = /** @type {HTMLInputElement} */ (document.getElementById('blockQuoteModeCheckbox'));
 
 /**
  * Cache
@@ -149,6 +148,7 @@ const loadSample = (optEvent) => {
 	/** @type {Config} */
 	const sampleConfig = {
 		urlInput: 'https://twitter.com/1joshuatz/status/1178001362690293760',
+		urlInputType: 'single',
 		blockQuoteMode: false,
 		iframeType: 'dataUri',
 		defaultHeight: 620,
@@ -164,7 +164,10 @@ const getConfig = () => {
 	/** @type {Config} */
 	const config = {
 		urlInput: urlInputElem.value,
+		// @ts-ignore
+		urlInputType: document.querySelector('input[name="urlInputType"]:checked').value,
 		blockQuoteMode: !!blockQuoteModeCheckbox.checked,
+		// @ts-ignore
 		iframeType: document.querySelector('input[name="iframeType"]:checked').value,
 		defaultHeight: parseInt(defaultHeightInput.value, 10),
 		removeBorder: !!removeBorderCheckbox.checked,
@@ -180,11 +183,14 @@ const getConfig = () => {
  */
 const mapConfigToInputs = (config) => {
 	urlInputElem.value = config.urlInput;
+	// @ts-ignore
+	document.querySelector(`input[name="urlInputType"][value="${config.urlInputType}"]`).checked = true;
 	blockQuoteModeCheckbox.checked = config.blockQuoteMode;
 	blockQuoteModeCheckbox.dispatchEvent(new Event('change'));
+	// @ts-ignore
 	document.querySelector(`input[name="iframeType"][value="${config.iframeType}"]`).checked = true;
 	removeBorderCheckbox.checked = config.removeBorder;
-	defaultHeightInput.value = config.defaultHeight;
+	defaultHeightInput.value = config.defaultHeight.toString();
 	hideOverflowCheckbox.checked = config.hideOverflow;
 };
 
@@ -214,7 +220,7 @@ const getIframeStrWithProps = (props, fallbackContent = '', includeFalse = false
  * @param {string} tweetIdOrUrl
  * @param {Partial<GetOEmbedParams>} optParams
  * @param {boolean} optUseCache
- * @returns {OEmbedRes}
+ * @returns {Promise<OEmbedRes>}
  */
 const getOEmbed = async (tweetIdOrUrl, optParams = {}, optUseCache = true) => {
 	if (optUseCache && !!cache[tweetIdOrUrl]) {
@@ -228,6 +234,7 @@ const getOEmbed = async (tweetIdOrUrl, optParams = {}, optUseCache = true) => {
 		url: tweetIdOrUrl
 	};
 	const url = new URL(endpoint);
+	// @ts-ignore
 	url.search = new URLSearchParams(params);
 
 	// Use JSONP to get around missing CORs headers
@@ -308,6 +315,9 @@ inputForm.addEventListener('submit', (evt) => {
 		});
 	}
 });
+inputForm.addEventListener('change', () => {
+	console.log('Form change!');
+});
 sampleButton.addEventListener('click', loadSample);
 outputArea.addEventListener('click', copyOutputToClipboard);
 aboutButtons.forEach((button) => {
@@ -374,6 +384,7 @@ blockQuoteModeCheckbox.addEventListener('change', () => {
 /**
  * @typedef Config
  * @property {string} urlInput
+ * @property {'single' | 'multiple'} urlInputType
  * @property {boolean} blockQuoteMode
  * @property {'srcDoc' | 'dataUri'} iframeType
  * @property {number} defaultHeight

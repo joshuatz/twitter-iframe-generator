@@ -76,7 +76,7 @@
 		</style>
 	</head>
 	<body>
-		<div id="aboutSection" class="scale-out scale-transition row noHeight" style="height: 160px;">
+		<div id="aboutSection" class="scale-out scale-transition row noHeight" style="height: 160px">
 			<div class="col s10 offset-s1 card">
 				<div class="closeButton">❎</div>
 				<p>This is a tool for generating IFrame twitter embeds, as opposed to the normal HTML+JS snippet.</p>
@@ -100,6 +100,18 @@
 						Tweet URL:
 						<input type="url" id="tweetUrlInput" placeholder="Tweet URL" />
 					</label>
+					<!-- URL Input Type -->
+					<div class="radioWrapper formSection row">
+						<div class="col s4">URL Input Type</div>
+						<label class="col s4">
+							<input name="urlInputType" type="radio" value="single" checked />
+							<span>Single URL</span>
+						</label>
+						<label class="col s4">
+							<input name="urlInputType" type="radio" value="multiple" />
+							<span>Multiple URLs (list)</span>
+						</label>
+					</div>
 					<!-- IFrame Type Selector -->
 					<div class="radioWrapper formSection row iframeOnly">
 						<div class="col s4">IFrame Type</div>
