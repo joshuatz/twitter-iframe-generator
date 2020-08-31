@@ -8,6 +8,9 @@
 		<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css" integrity="sha256-OweaP/Ic6rsV+lysfyS4h+LM6sRwuO3euTYfr6M124g=" crossorigin="anonymous" />
 		<script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js" integrity="sha256-U/cHDMTIHCeMcvehBv1xQ052bPSbJtbuiw4QA9cTKz0=" crossorigin="anonymous" async></script>
 		<style>
+			body {
+				margin: 20px 0px 0px 0px;
+			}
 			:root {
 				--gridColor: #e0e0e0;
 				--gridStyle: 1px solid var(--gridColor);
@@ -39,6 +42,9 @@
 			}
 			.hidden {
 				display: none;
+			}
+			.center {
+				text-align: center;
 			}
 			#aboutSection.scale-transition {
 				transition-property: transform, height, max-height !important;
@@ -96,10 +102,15 @@
 			<div class="col s12 m6">
 				<form id="inputForm" class="col s12 row">
 					<!-- Tweet URL -->
-					<label>
+					<label class="singleUrl">
 						Tweet URL:
 						<input type="url" id="tweetUrlInput" placeholder="Tweet URL" />
 					</label>
+					<div class="row multipleUrl hidden">
+						<p class="center-align flow-text">Input your tweets, line by line</p>
+						<span class="center">If using a CSV, you can copy and paste the cells.</span>
+						<textarea id="tweetUrlInputMultiple" class="col s12" style="min-height: 120px" placeholder="https://twitter.com/1joshuatz/status/1178001362690293760&#10;https://twitter.com/1joshuatz/status/1178001362690293760"></textarea>
+					</div>
 					<!-- URL Input Type -->
 					<div class="radioWrapper formSection row">
 						<div class="col s4">URL Input Type</div>
@@ -159,10 +170,11 @@
 					</div>
 					<div class="formSection row center-align">
 						<button id="sampleButton" class="btn col s4 offset-s1" type="button" title="Load sample tweet.">Sample 📤</button>
-						<button id="generateButton" class="btn col s4 offset-s2" type="submit" title="Generate the output code.">Generate ✨</button>
+						<button id="generateButton" class="btn col s4 offset-s1" type="submit" title="Generate the output code.">Generate ✨</button>
+						<button id="saveButton" class="btn col s1 offset-s1 multipleUrl hidden" title="Save">💾</button>
 					</div>
 				</form>
-				<div id="outputArea" class="row">
+				<div id="outputArea" class="col s12 row">
 					<p class="center-align flow-text">Output HTML:</p>
 					<textarea id="outputTextArea" readonly class="col s12 disabled">Output will appear here...</textarea>
 				</div>

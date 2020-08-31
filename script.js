@@ -1,11 +1,20 @@
 // @ts-check
+/// <reference path="./globals.d.ts" />
+
+/**
+ * Configurable Constants
+ */
 const CACHE_KEY = 'cache';
+const API_THROTTLE_MS = 500;
+const MULTI_URL_PREVIEW_PLACEHOLDER = `<b>Preview is skipped for bulk export</b>`;
+const SINGLE_URL_PREVIEW_PLACEHOLDER = `<i>Waiting for generation...</i>`;
 
 /**
  * Elements
  */
 const outputArea = /** @type {HTMLTextAreaElement} */ (document.getElementById('outputTextArea'));
 const urlInputElem = /** @type {HTMLInputElement} */ (document.getElementById('tweetUrlInput'));
+const multiUrlInputElem = /** @type {HTMLTextAreaElement} */ (document.getElementById('tweetUrlInputMultiple'));
 const generateButton = document.getElementById('generateButton');
 const placeholderOutTxt = outputArea.value;
 const previewArea = document.getElementById('previewArea');
@@ -31,61 +40,110 @@ const updateCache = (cache) => {
 };
 let cache = getCache();
 
+/**
+ * @param {string} tweetUrl
+ * @param {Config} config
+ */
+const getIframeCodeFromTweet = async (tweetUrl, config) => {
+	const embedInfo = await getOEmbed(tweetUrl);
+	console.log(embedInfo);
+	let { html, width, height } = embedInfo;
+	height = height || config.defaultHeight;
+	let iframeCodeStr = '';
+	const iframeProps = {
+		style: null,
+		width,
+		height,
+		'data-tweet-url': embedInfo.url,
+		sandbox: config.sandbox
+	};
+	if (!config.blockQuoteMode && config.hideOverflow) {
+		// To hide overflow, the style has to be injected *inside* the frame
+		html += `<style>html{overflow:hidden !important;}</style>`;
+	}
+	if (config.removeBorder) {
+		iframeProps.style = 'border:none;';
+	}
+
+	if (config.blockQuoteMode) {
+		// Strip Twitter JS script tag
+		html = html.replace(/<script[^<]+<\/script>/gi, '');
+		iframeCodeStr = html;
+	} else if (config.iframeType === 'dataUri') {
+		const dataUri = `data:text/html;charset=utf-8,${escape(html)}`;
+		iframeCodeStr = getIframeStrWithProps({
+			...iframeProps,
+			src: dataUri
+		});
+	} else {
+		iframeCodeStr = getIframeStrWithProps({
+			...iframeProps,
+			srcdoc: simpleEscape(html)
+		});
+	}
+
+	return iframeCodeStr;
+};
+
 // Main Generate Func
-const generate = async (optEvent) => {
+const generate = async (optEvent, saveToFile = false) => {
 	const config = getConfig();
 	console.log(config);
-	if (urlInputElem.value && urlInputElem.checkValidity()) {
-		const tweetUrl = urlInputElem.value;
-		try {
-			const embedInfo = await getOEmbed(tweetUrl);
-			console.log(embedInfo);
-			let { html, width, height } = embedInfo;
-			height = height || config.defaultHeight;
-			let iframeCodeStr = '';
-			const iframeProps = {
-				style: null,
-				width,
-				height,
-				'data-tweet-url': embedInfo.url,
-				sandbox: config.sandbox
-			};
-			if (!config.blockQuoteMode && config.hideOverflow) {
-				// To hide overflow, the style has to be injected *inside* the frame
-				html += `<style>html{overflow:hidden !important;}</style>`;
+	if (config.urlInputType === 'single') {
+		if (urlInputElem.value && urlInputElem.checkValidity()) {
+			const tweetUrl = urlInputElem.value;
+			try {
+				const iframeCodeStr = await getIframeCodeFromTweet(tweetUrl, config);
+				outputArea.value = iframeCodeStr;
+				previewArea.innerHTML = iframeCodeStr;
+				if (optEvent) {
+					copyOutputToClipboard(optEvent);
+				}
+			} catch (e) {
+				reset(false);
+				console.error(e);
+				alert('Something went wrong! Maybe an invalid Tweet URL? 😢');
 			}
-			if (config.removeBorder) {
-				iframeProps.style = 'border:none;';
+		} else {
+			alert('Please enter a valid URL 🙃');
+		}
+	} else {
+		// Iterate
+		const iframeCodeStrArr = /** @type {string[]} */ ([]);
+		const exportMdArr = [['Tweet URL', 'Iframe Code']];
+		const tweetUrlsArr = multiUrlInputElem.value.split('\n').filter((val) => val !== '');
+		for (let x = 0; x < tweetUrlsArr.length; x++) {
+			const tweetUrl = tweetUrlsArr[x];
+
+			// Throttle requests
+			if (x > 0) {
+				await new Promise((res) => setTimeout(res, API_THROTTLE_MS));
 			}
 
-			if (config.blockQuoteMode) {
-				// Strip Twitter JS script tag
-				html = html.replace(/<script[^<]+<\/script>/gi, '');
-				iframeCodeStr = html;
-			} else if (config.iframeType === 'dataUri') {
-				const dataUri = `data:text/html;charset=utf-8,${escape(html)}`;
-				iframeCodeStr = getIframeStrWithProps({
-					...iframeProps,
-					src: dataUri
-				});
-			} else {
-				iframeCodeStr = getIframeStrWithProps({
-					...iframeProps,
-					srcdoc: simpleEscape(html)
-				});
+			try {
+				const iframeCodeStr = await getIframeCodeFromTweet(tweetUrl, config);
+				iframeCodeStrArr.push(iframeCodeStr);
+				exportMdArr.push([tweetUrl, iframeCodeStr]);
+			} catch (e) {
+				iframeCodeStrArr.push(`<!-- Failed to fetch tweet: ${tweetUrl}`);
+				exportMdArr.push([tweetUrl, '']);
+				console.error(`Failed to fetch tweet`, e);
 			}
-			outputArea.value = iframeCodeStr;
-			previewArea.innerHTML = iframeCodeStr;
+		}
+
+		if (tweetUrlsArr.length) {
+			// Join together output with line breaks
+			const outputCode = iframeCodeStrArr.join('\n');
+			outputArea.value = outputCode;
 			if (optEvent) {
 				copyOutputToClipboard(optEvent);
 			}
-		} catch (e) {
-			reset(false);
-			console.error(e);
-			alert('Something went wrong! Maybe an invalid Tweet URL? 😢');
+
+			const stamp = new Date().getTime();
+			if (saveToFile) {
+				downloadCsv(exportMdArr, `twitter_embeds_${stamp}.csv`);
+			}
 		}
-	} else {
-		alert('Please enter a valid URL 🙃');
 	}
 };
 
@@ -129,6 +187,40 @@ const copyToClipboard = async (textArea, event) => {
 	}
 
 	return success;
+};
+
+/**
+ * Generate a CSV or TSV download from a MD Array
+ * @param {Array<Array<any>>} mdArr
+ * @param {string} [filename]
+ * @param {',' | '\t'} [delimiter]
+ */
+const downloadCsv = (mdArr, filename, delimiter = ',') => {
+	const extension = delimiter === ',' ? 'csv' : 'tsv';
+	const mimeString = extension === 'csv' ? 'text/csv' : 'text/tab-separated-values';
+	if (!/(\.tsv$|\.csv$)/.test(filename)) {
+		filename += `.${extension}`;
+	}
+	// CSV requires some special escaping
+	if (extension === 'csv') {
+		mdArr = mdArr.map((arr) => {
+			return arr.map((val) => {
+				// If it contains a quote, you have to double escape
+				val = val.replace(/"/gm, `""`);
+				// Wrap entire string (this will also escape commas)
+				val = `"${val}"`;
+				return val;
+			});
+		});
+	}
+	const rawOutput = `data:${mimeString};charset=utf-8,${mdArr.map((r) => r.join(delimiter)).join('\n')}`;
+	const link = document.createElement('a');
+	link.setAttribute('href', encodeURI(rawOutput));
+	link.setAttribute('download', filename);
+	link.style.display = 'none';
+	document.body.appendChild(link);
+	link.click(); // Prompt download
+	link.parentNode.removeChild(link); // Cleanup
 };
 
 /**
@@ -277,17 +369,49 @@ const simpleEscape = (input) => {
 };
 
 /**
+ * Utility func - get elements by explicit or by selector
+ * @param {Element | string} thing
+ * @returns {Element[]}
+ */
+const getThings = (thing) => {
+	let elems;
+	if (typeof thing === 'string') {
+		elems = Array.from(document.querySelectorAll(thing));
+	} else {
+		elems = [thing];
+	}
+	return elems;
+};
+
+/**
  *
- * @param {Element} elem
+ * @param {Element | string} thing
  * @param {boolean} setVisible
  */
-const scaleInOut = (elem, setVisible) => {
-	if (setVisible) {
-		elem.classList.remove('scale-out');
-		elem.classList.remove('noHeight');
+const scaleInOut = (thing, setVisible) => {
+	const elems = getThings(thing);
+	elems.forEach((elem) => {
+		if (setVisible) {
+			elem.classList.remove('scale-out');
+			elem.classList.remove('noHeight');
+		} else {
+			elem.classList.add('scale-out');
+			elem.classList.add('noHeight');
+		}
+	});
+};
+
+/**
+ *
+ * @param {Element | string} thing
+ * @param {'show' | 'hide'} method
+ */
+const showOrHide = (thing, method) => {
+	const elems = getThings(thing);
+	if (method === 'show') {
+		elems.forEach((elem) => elem.classList.remove('hidden'));
 	} else {
-		elem.classList.add('scale-out');
-		elem.classList.add('noHeight');
+		elems.forEach((elem) => elem.classList.add('hidden'));
 	}
 };
 
@@ -295,14 +419,6 @@ const scaleInOut = (elem, setVisible) => {
  * Setup Event Listeners
  */
 let generationInProgress = false;
-generateButton.addEventListener('click', (evt) => {
-	if (!generationInProgress) {
-		generationInProgress = true;
-		generate(evt).then(() => {
-			generationInProgress = false;
-		});
-	}
-});
 urlInputElem.addEventListener('change', () => {
 	reset(false);
 });
@@ -315,9 +431,48 @@ inputForm.addEventListener('submit', (evt) => {
 		});
 	}
 });
-inputForm.addEventListener('change', () => {
-	console.log('Form change!');
+document.getElementById('saveButton').addEventListener('click', (evt) => {
+	if (!generationInProgress) {
+		generationInProgress = true;
+		generate(evt, true).then(() => {
+			generationInProgress = false;
+		});
+	}
 });
+
+let prevConfig = /** @type {Partial<Config>} */ ({});
+const handleFormChange = () => {
+	console.log('Form change!');
+	const updatedConfig = getConfig();
+	if (updatedConfig.urlInputType !== prevConfig.urlInputType) {
+		if (updatedConfig.urlInputType === 'single') {
+			showOrHide('.singleUrl', 'show');
+			showOrHide('.multipleUrl', 'hide');
+			previewArea.innerHTML = SINGLE_URL_PREVIEW_PLACEHOLDER;
+		} else {
+			showOrHide('.singleUrl', 'hide');
+			showOrHide('.multipleUrl', 'show');
+			previewArea.innerHTML = MULTI_URL_PREVIEW_PLACEHOLDER;
+		}
+	}
+	if (updatedConfig.blockQuoteMode !== prevConfig.blockQuoteMode) {
+		if (updatedConfig.blockQuoteMode) {
+			document.querySelectorAll('.iframeOnly').forEach((elem) => {
+				elem.setAttribute('disabled', '');
+				elem.querySelectorAll('input').forEach((elem) => elem.setAttribute('disabled', ''));
+			});
+		} else {
+			document.querySelectorAll('.iframeOnly').forEach((elem) => {
+				elem.removeAttribute('disabled');
+				elem.querySelectorAll('input').forEach((elem) => elem.removeAttribute('disabled'));
+			});
+		}
+	}
+	prevConfig = JSON.parse(JSON.stringify(updatedConfig));
+};
+handleFormChange();
+
+inputForm.addEventListener('change', handleFormChange);
 sampleButton.addEventListener('click', loadSample);
 outputArea.addEventListener('click', copyOutputToClipboard);
 aboutButtons.forEach((button) => {
@@ -332,20 +487,6 @@ aboutButtons.forEach((button) => {
 });
 aboutSection.querySelector('.closeButton').addEventListener('click', (evt) => {
 	scaleInOut(aboutSection, false);
-});
-blockQuoteModeCheckbox.addEventListener('change', () => {
-	if (blockQuoteModeCheckbox.checked) {
-		document.querySelectorAll('.iframeOnly').forEach((elem) => {
-			elem.setAttribute('disabled', '');
-			elem.querySelectorAll('input').forEach((elem) => elem.setAttribute('disabled', ''));
-		});
-	} else {
-		document.querySelectorAll('.iframeOnly').forEach((elem) => {
-			elem.removeAttribute('disabled');
-			elem.querySelectorAll('input').forEach((elem) => elem.removeAttribute('disabled'));
-		});
-	}
-	reset(false);
 });
 
 /**
