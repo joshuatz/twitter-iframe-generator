@@ -26,7 +26,6 @@ const sampleButton = document.getElementById('sampleButton');
 const hideOverflowCheckbox = /** @type {HTMLInputElement} */ (document.getElementById('hideOverflow'));
 const aboutSection = document.getElementById('aboutSection');
 const aboutButtons = document.querySelectorAll('.aboutButton');
-const blockQuoteModeCheckbox = /** @type {HTMLInputElement} */ (document.getElementById('blockQuoteModeCheckbox'));
 
 /**
  * Cache
@@ -49,7 +48,7 @@ const getIframeCodeFromTweet = async (tweetUrl, config) => {
 	console.log(embedInfo);
 	let { html, width, height } = embedInfo;
 	height = height || config.defaultHeight;
-	let iframeCodeStr = '';
+	let outputCodeStr = '';
 	const iframeProps = {
 		style: null,
 		width,
@@ -57,7 +56,7 @@ const getIframeCodeFromTweet = async (tweetUrl, config) => {
 		'data-tweet-url': embedInfo.url,
 		sandbox: config.sandbox
 	};
-	if (!config.blockQuoteMode && config.hideOverflow) {
+	if (config.outputMode === 'blockquote' && config.hideOverflow) {
 		// To hide overflow, the style has to be injected *inside* the frame
 		html += `<style>html{overflow:hidden !important;}</style>`;
 	}
@@ -65,24 +64,34 @@ const getIframeCodeFromTweet = async (tweetUrl, config) => {
 		iframeProps.style = 'border:none;';
 	}
 
-	if (config.blockQuoteMode) {
+	if (config.outputMode === 'blockquote' || config.outputMode === 'markdown') {
 		// Strip Twitter JS script tag
 		html = html.replace(/<script[^<]+<\/script>/gi, '');
-		iframeCodeStr = html;
-	} else if (config.iframeType === 'dataUri') {
-		const dataUri = `data:text/html;charset=utf-8,${escape(html)}`;
-		iframeCodeStr = getIframeStrWithProps({
-			...iframeProps,
-			src: dataUri
-		});
-	} else {
-		iframeCodeStr = getIframeStrWithProps({
-			...iframeProps,
-			srcdoc: simpleEscape(html)
-		});
 	}
 
-	return iframeCodeStr;
+	if (config.outputMode === 'blockquote') {
+		// Just return html as-is, since twitter returns as blockquote
+		outputCodeStr = html;
+	} else if (config.outputMode === 'iframe') {
+		if (config.iframeType === 'dataUri') {
+			const dataUri = `data:text/html;charset=utf-8,${escape(html)}`;
+			outputCodeStr = getIframeStrWithProps({
+				...iframeProps,
+				src: dataUri
+			});
+		} else {
+			outputCodeStr = getIframeStrWithProps({
+				...iframeProps,
+				srcdoc: simpleEscape(html)
+			});
+		}
+	} else if (config.outputMode === 'markdown') {
+		const turndownService = getTurndownService();
+		const markdown = turndownService.turndown(html);
+		outputCodeStr = markdown;
+	}
+
+	return outputCodeStr;
 };
 
 // Main Generate Func
@@ -95,6 +104,7 @@ const generate = async (optEvent, saveToFile = false) => {
 			try {
 				const iframeCodeStr = await getIframeCodeFromTweet(tweetUrl, config);
 				outputArea.value = iframeCodeStr;
+				outputArea.disabled = false;
 				previewArea.innerHTML = iframeCodeStr;
 				if (optEvent) {
 					copyOutputToClipboard(optEvent);
@@ -241,7 +251,7 @@ const loadSample = (optEvent) => {
 	const sampleConfig = {
 		urlInput: 'https://twitter.com/1joshuatz/status/1178001362690293760',
 		urlInputType: 'single',
-		blockQuoteMode: false,
+		outputMode: 'iframe',
 		iframeType: 'dataUri',
 		defaultHeight: 620,
 		removeBorder: true,
@@ -249,6 +259,7 @@ const loadSample = (optEvent) => {
 		hideOverflow: true
 	};
 	mapConfigToInputs(sampleConfig);
+	inputForm.dispatchEvent(new Event('change'));
 	generate(optEvent);
 };
 
@@ -258,7 +269,8 @@ const getConfig = () => {
 		urlInput: urlInputElem.value,
 		// @ts-ignore
 		urlInputType: document.querySelector('input[name="urlInputType"]:checked').value,
-		blockQuoteMode: !!blockQuoteModeCheckbox.checked,
+		// @ts-ignore
+		outputMode: document.querySelector('input[name="outputType"]:checked').value,
 		// @ts-ignore
 		iframeType: document.querySelector('input[name="iframeType"]:checked').value,
 		defaultHeight: parseInt(defaultHeightInput.value, 10),
@@ -277,8 +289,8 @@ const mapConfigToInputs = (config) => {
 	urlInputElem.value = config.urlInput;
 	// @ts-ignore
 	document.querySelector(`input[name="urlInputType"][value="${config.urlInputType}"]`).checked = true;
-	blockQuoteModeCheckbox.checked = config.blockQuoteMode;
-	blockQuoteModeCheckbox.dispatchEvent(new Event('change'));
+	// @ts-ignore
+	document.querySelector(`input[name="outputType"][value="${config.outputMode}"]`).checked = true;
 	// @ts-ignore
 	document.querySelector(`input[name="iframeType"][value="${config.iframeType}"]`).checked = true;
 	removeBorderCheckbox.checked = config.removeBorder;
@@ -302,6 +314,45 @@ const getIframeStrWithProps = (props, fallbackContent = '', includeFalse = false
 		}
 	}
 	return `<iframe ${propStr}>${fallbackContent}</iframe>`;
+};
+
+const getTurndownService = () => {
+	if (!window.turndownService) {
+		window.turndownService = new TurndownService();
+		window.turndownService.addRule(`paragraphs`, {
+			filter: ['p'],
+			replacement: (content) => {
+				return `${content} \n\n`;
+			}
+		});
+		// Override blockquote handling
+		window.turndownService.addRule(`blockquote`, {
+			filter: ['blockquote'],
+			replacement: (content) => {
+				content = content.replace(/^/gm, '> ');
+				return `${content} \n\n`;
+			}
+		});
+		// Catch twitter image embeds
+		window.turndownService.addRule(`Twitter Images`, {
+			filter: (node) => {
+				if (node.nodeName === 'A') {
+					const link = /** @type {HTMLAnchorElement} */ (node);
+					return /\/\/t\.co\/.+/.test(link.href) && /pic\.twitter\.\w{1,6}\/.+/.test(link.innerText);
+				}
+				return false;
+			},
+			replacement: (htmlStr, node) => {
+				let imageSrc = node.innerText;
+				// Make sure image src is prefixed with `https://` to avoid relative path!
+				if (imageSrc.startsWith(`pic.`)) {
+					imageSrc = `https://${imageSrc}`;
+				}
+				return `[![Embedded Twitter Image](${imageSrc})](${imageSrc})`;
+			}
+		});
+	}
+	return window.turndownService;
 };
 
 /**
@@ -455,16 +506,16 @@ const handleFormChange = () => {
 			previewArea.innerHTML = MULTI_URL_PREVIEW_PLACEHOLDER;
 		}
 	}
-	if (updatedConfig.blockQuoteMode !== prevConfig.blockQuoteMode) {
-		if (updatedConfig.blockQuoteMode) {
-			document.querySelectorAll('.iframeOnly').forEach((elem) => {
-				elem.setAttribute('disabled', '');
-				elem.querySelectorAll('input').forEach((elem) => elem.setAttribute('disabled', ''));
-			});
-		} else {
+	if (updatedConfig.outputMode !== prevConfig.outputMode) {
+		if (updatedConfig.outputMode === 'iframe') {
 			document.querySelectorAll('.iframeOnly').forEach((elem) => {
 				elem.removeAttribute('disabled');
 				elem.querySelectorAll('input').forEach((elem) => elem.removeAttribute('disabled'));
+			});
+		} else {
+			document.querySelectorAll('.iframeOnly').forEach((elem) => {
+				elem.setAttribute('disabled', '');
+				elem.querySelectorAll('input').forEach((elem) => elem.setAttribute('disabled', ''));
 			});
 		}
 	}
@@ -526,7 +577,7 @@ aboutSection.querySelector('.closeButton').addEventListener('click', (evt) => {
  * @typedef Config
  * @property {string} urlInput
  * @property {'single' | 'multiple'} urlInputType
- * @property {boolean} blockQuoteMode
+ * @property {'iframe' | 'blockquote' | 'markdown'} outputMode
  * @property {'srcDoc' | 'dataUri'} iframeType
  * @property {number} defaultHeight
  * @property {boolean} removeBorder

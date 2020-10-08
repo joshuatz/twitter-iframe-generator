@@ -7,6 +7,7 @@
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css" integrity="sha256-OweaP/Ic6rsV+lysfyS4h+LM6sRwuO3euTYfr6M124g=" crossorigin="anonymous" />
 		<script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js" integrity="sha256-U/cHDMTIHCeMcvehBv1xQ052bPSbJtbuiw4QA9cTKz0=" crossorigin="anonymous" async></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/turndown/6.0.0/turndown.js" integrity="sha512-ksK3zUiSJABhKnZtA+oMxmGWNkOWWo517wOo7xZGU238wsFZvoaRkK3aMtK48onGCXcQRqmyYwOT4OyZratcGg==" crossorigin="anonymous" async></script>
 		<style>
 			body {
 				margin: 20px 0px 0px 0px;
@@ -158,16 +159,25 @@
 							<span>Hide overflow</span>
 						</label>
 					</div>
-					<div class="formSection row center-align">
-						<div class="switch">
-							<label>
-								IFrame
-								<input id="blockQuoteModeCheckbox" type="checkbox" />
-								<span class="lever"></span>
-								BlockQuote Only
-							</label>
+					<!-- Output Mode Selector -->
+					<div class="radioWrapper formSection row">
+						<div class="row">
+							<div class="col s4">Output Type:</div>
 						</div>
+						<label class="col s4">
+							<input name="outputType" type="radio" value="iframe" checked />
+							<span>Iframe</span>
+						</label>
+						<label class="col s4">
+							<input name="outputType" type="radio" value="blockquote" />
+							<span>BlockQuote</span>
+						</label>
+						<label class="col s4">
+							<input name="outputType" type="radio" value="markdown" />
+							<span>Markdown</span>
+						</label>
 					</div>
+					<!-- CTA Buttons -->
 					<div class="formSection row center-align">
 						<button id="sampleButton" class="btn col s4 offset-s1" type="button" title="Load sample tweet.">Sample 📤</button>
 						<button id="generateButton" class="btn col s4 offset-s1" type="submit" title="Generate the output code.">Generate ✨</button>
@@ -187,7 +197,7 @@
 		<div class="fixed-action-btn">
 			<div class="aboutButton z-depth-3">❔</div>
 		</div>
-		<script src="./script.js"></script>
+		<script src="./script.js?v=2"></script>
 		<script>
 			window.addEventListener('load', () => {
 				if (window['M']) {
